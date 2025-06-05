@@ -53,17 +53,16 @@ export default function GameBoard({ roomName }) {
     if (!nameSubmitted) return;
     // sleep for 0.5 seconds to allow bots to listen to the join_room event
     setTimeout(() => {
-      setStatusMessage("Joining room...");
-    }, 500);
-    console.log("Joining room with name:", myName);
-    socket.emit("join_room", { roomName: roomName, name: myName });
-    setMyRoomName(roomName);
-    console.log(roomName);
+      console.log("Joining room with name:", myName);
+      socket.emit("join_room", { roomName: roomName, name: myName });
+      setMyRoomName(roomName);
+      console.log(roomName);
 
-    const handleBeforeUnload = () => {
-      socket.emit("leave_room", { roomName, name: myName });
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
+      const handleBeforeUnload = () => {
+        socket.emit("leave_room", { roomName, name: myName });
+      };
+      window.addEventListener("beforeunload", handleBeforeUnload);
+    }, 500);
 
     // Game state updates
     socket.on("status", (data) => {
