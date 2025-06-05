@@ -1,9 +1,11 @@
 const express = require("express");
+const cors = require("cors");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const GameEngine = require("./game/GameEngine");
 
 const app = express();
+app.use(cors());
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: { origin: "*" },
@@ -340,6 +342,7 @@ io.on("connection", (socket) => {
   }
 });
 
-httpServer.listen(3001, () => {
-  console.log("Server running on port 3001");
+const PORT = process.env.PORT || 3001;
+httpServer.listen(PORT, () => {
+  console.log("Server running on port", PORT);
 });
