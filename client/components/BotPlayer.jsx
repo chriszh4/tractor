@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import { decomposeHand } from "./cardUtils";
 
-export default function BotPlayer({ nthPlayer = 4 }) {
+export default function BotPlayer({ roomName, nthPlayer = 4 }) {
   const [myName] = useState(
     "Bot_" + Math.random().toString(36).substring(2, 6)
   );
@@ -12,10 +12,14 @@ export default function BotPlayer({ nthPlayer = 4 }) {
   const trumpRankRef = useRef(null);
   const outOfSuitsRef = useRef({});
   const bottomPileDoneRef = useRef(false);
+  const myRoomName = useRef(null);
 
   useEffect(() => {
-    const socket = io("http://localhost:3001");
-    socket.emit("listen_room", "room1");
+    const socket = io(
+      import.meta.env.VITE_SOCKET_URL || "http://localhost:3001"
+    );
+    myRoomName.ref = roomName;
+    socket.emit("listen_room", myRoomName.ref);
 
     socket.on("join_order", ({ playerJoinOrder }) => {
       const count = Object.keys(playerJoinOrder).length;
@@ -25,7 +29,7 @@ export default function BotPlayer({ nthPlayer = 4 }) {
 
       if (!joined && count + 1 === nthPlayer) {
         console.log(`[${myName}] joining as player #${nthPlayer}`);
-        socket.emit("join_room", { roomName: "room1", name: myName });
+        socket.emit("join_room", { roomName: myRoomName.ref, name: myName });
         setJoined(true);
       }
     });
@@ -69,7 +73,7 @@ export default function BotPlayer({ nthPlayer = 4 }) {
       const selected = allCards.slice(0, 8);
 
       socket.emit("bottom_pile_done", {
-        roomName: "room1",
+        roomName: myRoomName.ref,
         playerName: myName,
         bottomPile: selected,
       });
@@ -100,7 +104,7 @@ export default function BotPlayer({ nthPlayer = 4 }) {
             ) {
               console.log(`[${myName}] Bidding card: ${newCard.code}`);
               socket.emit("bid_cards", {
-                roomName: "room1",
+                roomName: myRoomName.ref,
                 playerName: myName,
                 bid: [newCard],
               });
@@ -144,7 +148,7 @@ export default function BotPlayer({ nthPlayer = 4 }) {
         .join(", ")}`
     );
     socket.emit("play_cards", {
-      roomName: "room1",
+      roomName: myRoomName.ref,
       playerName: myName,
       selectedCards,
     });
@@ -853,7 +857,7 @@ export default function BotPlayer({ nthPlayer = 4 }) {
 
     if (selected.length === requiredLength) {
       socket.emit("play_cards", {
-        roomName: "room1",
+        roomName: myRoomName.ref,
         playerName: myName,
         selectedCards: selected,
       });

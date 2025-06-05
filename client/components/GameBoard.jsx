@@ -13,10 +13,11 @@ import RankInfo from "./RankInfo";
 import GameEndInfo from "./GameEndInfo";
 import ErrorDisplay from "./ErrorDisplay";
 
-// Connect once
-const socket = io("http://localhost:3001");
+// Connect oncec
+const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:3001");
+// const socket = io("http://localhost:3001");
 
-export default function GameBoard() {
+export default function GameBoard({ roomName }) {
   // hardcode name for now for testing convenience
   const [myName, setMyName] = useState(
     "Player_" + Math.random().toString(36).substring(2, 7)
@@ -46,11 +47,19 @@ export default function GameBoard() {
   const [gameEndInfo, setGameEndInfo] = useState(null);
   const [playerJoinOrder, setPlayerJoinOrder] = useState({}); // for debugging, displays id
   const [errorMsg, setErrorMsg] = useState(null);
+  const [myRoomName, setMyRoomName] = useState(null);
 
   useEffect(() => {
     if (!nameSubmitted) return;
     console.log("Joining room with name:", myName);
-    socket.emit("join_room", { roomName: "room1", name: myName });
+    socket.emit("join_room", { roomName: roomName, name: myName });
+    setMyRoomName(roomName);
+    console.log(roomName);
+
+    const handleBeforeUnload = () => {
+      socket.emit("leave_room", { roomName, name: myName });
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     // Game state updates
     socket.on("status", (data) => {
@@ -154,9 +163,12 @@ export default function GameBoard() {
     });
 
     return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       socket.off("status");
       socket.off("update_game");
       socket.off("error");
+      // Emit leave_room manually on component unmount as a fallback
+      socket.emit("leave_room", { roomName, name: myName });
     };
   }, [nameSubmitted]);
 
@@ -170,7 +182,7 @@ export default function GameBoard() {
 
   const playSelected = () => {
     socket.emit("play_cards", {
-      roomName: "room1",
+      roomName: myRoomName,
       playerName: myName,
       selectedCards,
     });
@@ -179,7 +191,7 @@ export default function GameBoard() {
 
   const bidSelected = () => {
     socket.emit("bid_cards", {
-      roomName: "room1",
+      roomName: myRoomName,
       playerName: myName,
       bid: selectedCards,
     });
@@ -189,7 +201,7 @@ export default function GameBoard() {
   const onSelectBottomPile = (selectedCards) => {
     setSelectedCards([]);
     socket.emit("bottom_pile_done", {
-      roomName: "room1",
+      roomName: myRoomName,
       playerName: myName,
       bottomPile: selectedCards,
     });
@@ -285,7 +297,7 @@ export default function GameBoard() {
         <DealButton
           onDeal={() => {
             socket.emit("deal_cards", {
-              roomName: "room1",
+              roomName: myRoomName,
               playerName: myName,
             });
           }}

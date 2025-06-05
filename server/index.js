@@ -15,7 +15,7 @@ let SECONDS_TO_WAIT_FOR_BID = 5;
 let MS_IN_BETWEEN_CARDS = 300;
 let MS_IN_BETWEEN_DISPLAY_BOTTOM_PILE = 1000;
 
-const DEBUG = true;
+const DEBUG = false;
 if (DEBUG) {
   SECONDS_TO_WAIT_FOR_BID = 1;
   MS_IN_BETWEEN_CARDS = 30;
@@ -47,8 +47,19 @@ io.on("connection", (socket) => {
     console.log(`Player ${socket.id} listening to room: ${roomName}`);
     socket.join(roomName);
     io.to(roomName).emit("join_order", {
-      playerJoinOrder: playerJoinOrder,
+      playerJoinOrder: [roomName],
     });
+  });
+
+  socket.on("leave_room", ({ roomName, name }) => {
+    if (!rooms[roomName]) {
+      return;
+    }
+    // Remove entire room
+    console.log(`Deleting room: ${roomName}`);
+    socket.leave(roomName);
+    delete rooms[roomName];
+    delete playerJoinOrder[roomName];
   });
 
   socket.on("join_room", ({ roomName, name }) => {
@@ -58,6 +69,7 @@ io.on("connection", (socket) => {
         players: [],
         engine: null,
       };
+      playerJoinOrder[roomName] = {};
     }
 
     const room = rooms[roomName];
@@ -71,13 +83,13 @@ io.on("connection", (socket) => {
     // Add new player
     if (!room.players.includes(name)) {
       room.players.push(name);
-      playerJoinOrder[name] = room.players.length;
+      playerJoinOrder[roomName][name] = room.players.length;
     }
 
     socket.join(roomName);
 
     io.to(roomName).emit("join_order", {
-      playerJoinOrder: playerJoinOrder,
+      playerJoinOrder: playerJoinOrder[roomName],
     });
 
     // If enough players (e.g. 4), start game
