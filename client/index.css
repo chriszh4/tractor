@@ -1,0 +1,22 @@
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.card-img {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+  border: 2px solid transparent;
+  margin: 2px;
+}
+
+.card-img:hover {
+  transform: scale(1.05);
+}
+
+.card-img.selected {
+  border: 3px solid gold;
+  transform: scale(1.1);
+  box-shadow: 0 0 10px gold;
+}
