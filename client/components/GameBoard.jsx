@@ -51,6 +51,10 @@ export default function GameBoard({ roomName }) {
 
   useEffect(() => {
     if (!nameSubmitted) return;
+    // sleep for 0.5 seconds to allow bots to listen to the join_room event
+    setTimeout(() => {
+      setStatusMessage("Joining room...");
+    }, 500);
     console.log("Joining room with name:", myName);
     socket.emit("join_room", { roomName: roomName, name: myName });
     setMyRoomName(roomName);
