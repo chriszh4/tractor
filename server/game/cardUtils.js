@@ -431,7 +431,8 @@ function determineTrickWinner(playZones, trickStarter, playerOrder) {
   let winningPlayer = trickStarter;
   let winningPlayedCards = playZones[trickStarter] || [];
   let winningDecomp = decomposeHand(winningPlayedCards, true);
-  console.log("winning decomp", winningDecomp);
+  console.log("Winning decomp:");
+  console.dir(winningDecomp, { depth: null });
 
   // Determine the suit only if all cards match
   const winningSuit = winningPlayedCards.every(
@@ -452,7 +453,8 @@ function determineTrickWinner(playZones, trickStarter, playerOrder) {
     );
 
     if (challengerDecomp === null) continue;
-    console.log("challenger decomp", challengerDecomp);
+    console.log("Challenger decomp:");
+    console.dir(challengerDecomp, { depth: null });
 
     const challengerSuit = challengerCards.every(
       (c) => c.suit === challengerCards[0]?.suit
@@ -502,7 +504,7 @@ function compareDecomp(d1, d2) {
   }
   for (let i = 0; i < d1.pairs.length; i++) {
     if (
-      d1.pairs[i][0].rank < d2.pairs[i][0].rank &&
+      d1.pairs[i][0].rank <= d2.pairs[i][0].rank &&
       firstComponentLarger === null
     ) {
       return -1;
