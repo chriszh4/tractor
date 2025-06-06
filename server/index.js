@@ -102,7 +102,8 @@ io.on("connection", (socket) => {
       });
     } else {
       io.to(roomName).emit("status", {
-        message: `Waiting for players... (${room.players.length}/4)`,
+        // message: `Waiting for players... (${room.players.length}/4)`,
+        message: "Please reload if game does not start.",
       });
     }
   });
