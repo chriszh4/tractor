@@ -168,15 +168,14 @@ class GameEngine {
         (sum, cards) => sum + cards.reduce((acc, card) => acc + card.points, 0),
         0
       );
-      this.pointsWon = pointsWon;
+      this.pointsWon = pointsWon; // points won in this trick NOT total points won
     }
 
+    this.totalPointsWon += this.pointsWon;
     // check if the game is over and add points with multiplier
     if (this.hands[this.trickWinner].length === 0) {
       this.endGame();
       return true;
-    } else {
-      this.totalPointsWon += this.pointsWon;
     }
     return false;
   }
@@ -194,12 +193,12 @@ class GameEngine {
     } else if (winningHandDecomp.pairs.length > 0) {
       pointMultiplier = 4;
     }
-    const pointsWonLastTrick = pointMultiplier * pointsInBottomPile;
+    const pointsWonBottomPile = pointMultiplier * pointsInBottomPile;
     if (
       this.trickWinner !== this.throneName &&
       this.trickWinner !== this.throneTeammateName
     ) {
-      this.totalPointsWon += pointsWonLastTrick;
+      this.totalPointsWon += pointsWonBottomPile;
     }
 
     this.gameEndInfo = {
