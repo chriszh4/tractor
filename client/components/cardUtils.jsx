@@ -141,8 +141,8 @@ export function canBid(playerName, bid, trumpRank, activeBid, activeBidder) {
   }
 
   if (
-    (bid.length === 1 && !bid[0].code.startsWith(trumpRank)) ||
-    bid[0].code.startsWith("JOKER")
+    bid.length === 1 &&
+    (!bid[0].code.startsWith(trumpRank) || bid[0].code.startsWith("JOKER"))
   ) {
     return false;
   }
