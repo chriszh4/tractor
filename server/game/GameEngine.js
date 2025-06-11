@@ -9,7 +9,7 @@ const {
   incrementRank,
 } = require("./cardUtils");
 
-const DECK_SIZE = 16; //108;
+const DECK_SIZE = 108; //108;
 class GameEngine {
   constructor(roomName, io, playerNames) {
     this.roomName = roomName;
