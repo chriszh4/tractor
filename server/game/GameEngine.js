@@ -9,7 +9,7 @@ const {
   incrementRank,
 } = require("./cardUtils");
 
-const DECK_SIZE = 108; //108;
+const DECK_SIZE = 16; //108;
 class GameEngine {
   constructor(roomName, io, playerNames) {
     this.roomName = roomName;
@@ -45,6 +45,8 @@ class GameEngine {
     //
     this.undoMove = this.undoMove.bind(this);
     this.playCards = this.playCards.bind(this);
+    //
+    this.gameOver = false;
   }
 
   setThronePlayer(playerName) {
@@ -245,6 +247,15 @@ class GameEngine {
         );
       }
     });
+
+    // check if anyone's rank is null
+    const nullPlayers = this.playerOrder.filter(
+      (player) => this.teamRank[player] === null
+    );
+    if (nullPlayers.length > 0) {
+      this.gameOver = true;
+      return;
+    }
 
     // update throne
     if (this.gameEndInfo.throneCedes) {

@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function GameEndInfo({ gameEndInfo }) {
+export default function GameEndInfo({ gameEndInfo, gameOver }) {
   const {
     pointsInBottomPile,
     totalPointsWon,
@@ -9,19 +9,32 @@ export default function GameEndInfo({ gameEndInfo }) {
     opposingRankDelta,
   } = gameEndInfo;
 
+  const baseStyle = {
+    position: "fixed",
+    bottom: "32px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    backgroundColor: gameOver ? "#e74c3c" : "#2c3e50",
+    color: "white",
+    padding: "12px 16px",
+    borderRadius: "10px",
+    fontSize: "0.95rem",
+    textAlign: "right", // you had this already
+    minWidth: "200px",
+    zIndex: 9999,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+  };
+
+  if (gameOver) {
+    return (
+      <div style={baseStyle}>
+        <strong>Game Over!</strong>
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        backgroundColor: "#2c3e50",
-        color: "white",
-        padding: "12px 16px",
-        borderRadius: "10px",
-        marginBottom: "16px",
-        fontSize: "0.95rem",
-        textAlign: "left",
-        minWidth: "200px",
-      }}
-    >
+    <div style={baseStyle}>
       <div>
         <strong>Points in Bottom Pile:</strong> {pointsInBottomPile}
       </div>

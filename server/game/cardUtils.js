@@ -528,7 +528,10 @@ function compareDecomp(d1, d2) {
 
 function incrementRank(oldRank, delta) {
   const prevRankIndex = ranks.indexOf(oldRank);
-  const newRankIndex = Math.min(prevRankIndex + delta, ranks.length - 1);
+  const newRankIndex = Math.min(prevRankIndex + delta, ranks.length);
+  if (newRankIndex === ranks.length) {
+    return null;
+  }
   return ranks[newRankIndex];
 }
 

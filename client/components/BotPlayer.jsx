@@ -2,10 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import { decomposeHand } from "./cardUtils";
 
-export default function BotPlayer({ roomName, nthPlayer = 4 }) {
-  const [myName] = useState(
-    "Bot_" + Math.random().toString(36).substring(2, 6)
-  );
+export default function BotPlayer({ socket, roomName, botName }) {
+  const [myName] = useState(botName);
   const [joined, setJoined] = useState(false);
   const dealtCardsRef = useRef(false);
   const myHandRef = useRef([]);
@@ -15,23 +13,14 @@ export default function BotPlayer({ roomName, nthPlayer = 4 }) {
   const myRoomName = useRef(null);
 
   useEffect(() => {
-    const socket = io(
-      import.meta.env.VITE_SOCKET_URL || "http://localhost:3001"
-    );
-    myRoomName.ref = roomName;
-    socket.emit("listen_room", myRoomName.ref);
+    console.log(`[${myName}] BotPlayer component mounted with id ${socket.id}`);
+    //const socket = io(
+    //  import.meta.env.VITE_SOCKET_URL || "http://localhost:3001"
+    //);
+    myRoomName.current = roomName;
 
-    socket.on("join_order", ({ playerJoinOrder }) => {
-      const count = Object.keys(playerJoinOrder).length;
-      console.log(
-        `[${myName}] Current player count: ${count}, nthPlayer: ${nthPlayer}`
-      );
-
-      if (!joined && count + 1 === nthPlayer) {
-        console.log(`[${myName}] joining as player #${nthPlayer}`);
-        socket.emit("join_room", { roomName: myRoomName.ref, name: myName });
-        setJoined(true);
-      }
+    socket.emit("bot_join_room", {
+      roomName: myRoomName.current,
     });
 
     socket.on("start_game", ({ trumpRank, playerNames }) => {
@@ -73,7 +62,7 @@ export default function BotPlayer({ roomName, nthPlayer = 4 }) {
       const selected = allCards.slice(0, 8);
 
       socket.emit("bottom_pile_done", {
-        roomName: myRoomName.ref,
+        roomName: myRoomName.current,
         playerName: myName,
         bottomPile: selected,
       });
@@ -104,7 +93,7 @@ export default function BotPlayer({ roomName, nthPlayer = 4 }) {
             ) {
               console.log(`[${myName}] Bidding card: ${newCard.code}`);
               socket.emit("bid_cards", {
-                roomName: myRoomName.ref,
+                roomName: myRoomName.current,
                 playerName: myName,
                 bid: [newCard],
               });
@@ -137,9 +126,17 @@ export default function BotPlayer({ roomName, nthPlayer = 4 }) {
     });
 
     return () => {
+      console.log(`[${myName}] BotPlayer component unmounted`);
+      // Clean up the socket connection when the component unmounts
+      socket.off("start_game");
+      socket.off("dealt_cards");
+      socket.off("bottom_pile_done");
+      socket.off("bottom_pile");
+      socket.off("update_game");
+
       socket.disconnect();
     };
-  }, [myName, joined, nthPlayer]);
+  }, []);
 
   function playCardsToServer(myName, selectedCards, socket) {
     console.log(
@@ -148,7 +145,7 @@ export default function BotPlayer({ roomName, nthPlayer = 4 }) {
         .join(", ")}`
     );
     socket.emit("play_cards", {
-      roomName: myRoomName.ref,
+      roomName: myRoomName.current,
       playerName: myName,
       selectedCards,
     });
@@ -857,7 +854,7 @@ export default function BotPlayer({ roomName, nthPlayer = 4 }) {
 
     if (selected.length === requiredLength) {
       socket.emit("play_cards", {
-        roomName: myRoomName.ref,
+        roomName: myRoomName.current,
         playerName: myName,
         selectedCards: selected,
       });

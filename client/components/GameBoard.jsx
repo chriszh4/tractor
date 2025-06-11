@@ -14,21 +14,18 @@ import GameEndInfo from "./GameEndInfo";
 import ErrorDisplay from "./ErrorDisplay";
 
 // Connect oncec
-const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:3001");
+//const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:3001");
 // const socket = io("http://localhost:3001");
 
-export default function GameBoard({ roomName }) {
+export default function GameBoard({ socket, playerName, roomName }) {
   // hardcode name for now for testing convenience
-  const [myName, setMyName] = useState(
-    "Player_" + Math.random().toString(36).substring(2, 7)
-  );
-  const [nameSubmitted, setNameSubmitted] = useState(true);
+  const [myName, setMyName] = useState(playerName);
   const [allHands, setAllHands] = useState({});
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const [playZones, setPlayZones] = useState({});
   const [currentPlayer, setCurrentPlayer] = useState(null);
-  const [statusMessage, setStatusMessage] = useState("Joining room...");
+  const [statusMessage, setStatusMessage] = useState("Starting game...");
   const [playerNames, setPlayerNames] = useState({});
   const [relativePlayerOrder, setRelativePlayerOrder] = useState([]);
   const [trickWinner, setTrickWinner] = useState(null);
@@ -45,24 +42,18 @@ export default function GameBoard({ roomName }) {
   const [throneTeammateName, setThroneTeammateName] = useState(null);
   const [roundStarted, setRoundStarted] = useState(false);
   const [gameEndInfo, setGameEndInfo] = useState(null);
+  const [gameOver, setGameOver] = useState(false);
   const [playerJoinOrder, setPlayerJoinOrder] = useState({}); // for debugging, displays id
   const [errorMsg, setErrorMsg] = useState(null);
   const [myRoomName, setMyRoomName] = useState(null);
 
   useEffect(() => {
-    if (!nameSubmitted) return;
-    // sleep for 0.3 seconds to allow bots to listen to the join_room event
-    setTimeout(() => {
-      console.log("Joining room with name:", myName);
-      socket.emit("join_room", { roomName: roomName, name: myName });
-      setMyRoomName(roomName);
-      console.log(roomName);
+    setMyRoomName(roomName);
 
-      const handleBeforeUnload = () => {
-        socket.emit("leave_room", { roomName, name: myName });
-      };
-      window.addEventListener("beforeunload", handleBeforeUnload);
-    }, 300);
+    const handleBeforeUnload = () => {
+      socket.emit("leave_room", { roomName, name: myName });
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     // Game state updates
     socket.on("status", (data) => {
@@ -91,7 +82,7 @@ export default function GameBoard({ roomName }) {
     });
 
     socket.on("bottom_pile_done", () => {
-      console.log("Bottom pile done by", myName);
+      console.log("Bottom pile done");
       setBottomPileDone(true);
     });
 
@@ -113,9 +104,10 @@ export default function GameBoard({ roomName }) {
       setBidSecondsLeft(null);
     });
 
-    socket.on("end_round", ({ gameEndInfo }) => {
+    socket.on("end_round", ({ gameEndInfo, gameOver }) => {
       setRoundStarted(false);
       setGameEndInfo(gameEndInfo);
+      setGameOver(gameOver);
       setDealtCards(false);
       setBottomPileDone(false);
     });
@@ -173,7 +165,7 @@ export default function GameBoard({ roomName }) {
       // Emit leave_room manually on component unmount as a fallback
       socket.emit("leave_room", { roomName, name: myName });
     };
-  }, [nameSubmitted]);
+  }, []);
 
   const toggleCard = (card) => {
     setSelectedCards((prev) =>
@@ -209,17 +201,6 @@ export default function GameBoard({ roomName }) {
       bottomPile: selectedCards,
     });
   };
-
-  if (!nameSubmitted) {
-    return (
-      <NameEntry
-        onSubmit={(name) => {
-          setMyName(name);
-          setNameSubmitted(true);
-        }}
-      />
-    );
-  }
 
   if (statusMessage) {
     return (
@@ -265,7 +246,7 @@ export default function GameBoard({ roomName }) {
         />
         {gameEndInfo && (
           <>
-            <GameEndInfo gameEndInfo={gameEndInfo} />
+            <GameEndInfo gameEndInfo={gameEndInfo} gameOver={gameOver} />
 
             {Object.entries(relativePlayerOrder).map(([id, name], i) => {
               const positions = ["right", "top", "left"];
@@ -296,15 +277,16 @@ export default function GameBoard({ roomName }) {
             />
           </>
         )}
-
-        <DealButton
-          onDeal={() => {
-            socket.emit("deal_cards", {
-              roomName: myRoomName,
-              playerName: myName,
-            });
-          }}
-        />
+        {gameEndInfo && !gameOver && (
+          <DealButton
+            onDeal={() => {
+              socket.emit("deal_cards", {
+                roomName: myRoomName,
+                playerName: myName,
+              });
+            }}
+          />
+        )}
       </div>
     );
   }
