@@ -145,10 +145,9 @@ const RoomLobby = ({
 
   const styles = {
     container: {
-      maxWidth: "1200px",
       margin: "0 auto",
       padding: "24px",
-      background: "linear-gradient(135deg, #f0f8ff 0%, #f5f0ff 100%)",
+      background: "#5ebdae",
       minHeight: "100vh",
       fontFamily: "Arial, sans-serif",
     },

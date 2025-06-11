@@ -93,8 +93,7 @@ const GameLobby = ({
   const styles = {
     container: {
       minHeight: "100vh",
-      background:
-        "linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4a148c 100%)",
+      background: "#158573",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
