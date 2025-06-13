@@ -6,7 +6,6 @@ import PlayButton from "./PlayButton";
 import BidButton from "./BidButton";
 import PlayerView from "./PlayerView";
 import InfoCorner from "./InfoCorner";
-import NameEntry from "./NameEntry";
 import BottomPileButton from "./BottomPileButton";
 import DealButton from "./DealButton";
 import RankInfo from "./RankInfo";

@@ -40,8 +40,6 @@ const ranks = [
 
 const rooms = {}; // roomName → { engine: GameEngine, players: [], teams:[] }
 
-const playerJoinOrder = {};
-
 io.on("connection", (socket) => {
   socket.on("leave_room", ({ roomName, name }) => {
     if (!rooms[roomName]) {
@@ -51,7 +49,6 @@ io.on("connection", (socket) => {
     console.log(`Deleting room: ${roomName}`);
     socket.leave(roomName);
     delete rooms[roomName];
-    delete playerJoinOrder[roomName];
   });
 
   socket.on("create_room", ({ roomName, name }) => {
@@ -62,7 +59,6 @@ io.on("connection", (socket) => {
         engine: null,
         teams: null,
       };
-      playerJoinOrder[roomName] = {};
     } else {
       console.log(`Room ${roomName} already exists!`);
       socket.emit("error", "Room already exists, try again!");
@@ -74,7 +70,6 @@ io.on("connection", (socket) => {
     // Add new player
     if (!room.players.includes(name)) {
       room.players.push(name);
-      playerJoinOrder[roomName][name] = room.players.length;
     }
 
     socket.join(roomName);
@@ -89,11 +84,18 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("join_room", ({ roomName, name }) => {
-    console.log(`Player ${name} (${socket.id}) joining room: ${roomName}`);
+  function checkRoomExists(roomName) {
     if (!rooms[roomName]) {
       console.log(`Room ${roomName} does not exist!`);
       socket.emit("error", "Room does not exist!");
+      return false;
+    }
+    return true;
+  }
+
+  socket.on("join_room", ({ roomName, name }) => {
+    console.log(`Player ${name} (${socket.id}) joining room: ${roomName}`);
+    if (!checkRoomExists(roomName)) {
       return;
     }
 
@@ -115,7 +117,6 @@ io.on("connection", (socket) => {
     // Add new player
     if (!room.players.includes(name)) {
       room.players.push(name);
-      playerJoinOrder[roomName][name] = room.players.length;
     }
 
     socket.join(roomName);
@@ -131,6 +132,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("update_team", ({ roomCode, updatedTeams }) => {
+    if (!checkRoomExists(roomCode)) {
+      return;
+    }
     const room = rooms[roomCode];
 
     room.teams = updatedTeams;
@@ -141,11 +145,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("bot_join_room", ({ roomName }) => {
+    if (!checkRoomExists(roomName)) {
+      return;
+    }
     socket.join(roomName);
     console.log(`Bot joining room: ${roomName}`);
   });
 
   socket.on("request_start_game", ({ roomName, playerName, teams }) => {
+    if (!checkRoomExists(roomName)) {
+      return;
+    }
     io.to(roomName).emit("confirm_start_game", { teams });
 
     const room = rooms[roomName];
@@ -166,6 +176,9 @@ io.on("connection", (socket) => {
 
   // this is the sorta start game event
   socket.on("deal_cards", ({ roomName, playerName }) => {
+    if (!checkRoomExists(roomName)) {
+      return;
+    }
     console.log(`Dealing cards for room: ${roomName}`);
 
     const room = rooms[roomName];
@@ -181,6 +194,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("bid_cards", ({ roomName, playerName, bid }) => {
+    if (!checkRoomExists(roomName)) {
+      return;
+    }
     // Assume client checked that this bid is valid (and overturns any previous bids)
     const engine = rooms[roomName]?.engine;
     if (!engine) {
@@ -195,8 +211,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("bottom_pile_done", ({ roomName, playerName, bottomPile }) => {
+    if (!checkRoomExists(roomName)) {
+      return;
+    }
     const room = rooms[roomName];
-    if (!room || !room.engine) return;
 
     console.log(
       `Player ${playerName} selected bottom pile: ${bottomPile.map(
@@ -232,8 +250,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("play_cards", ({ roomName, playerName, selectedCards }) => {
+    if (!checkRoomExists(roomName)) {
+      return;
+    }
     const room = rooms[roomName];
-    if (!room || !room.engine) return;
 
     const engine = room.engine;
     if (!engine.readyToPlay) {

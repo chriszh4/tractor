@@ -89,7 +89,7 @@ export default function BotPlayer({ socket, roomName, botName }) {
             if (
               newCard.code.startsWith(trumpRankRef.current) &&
               !anyPlayerHasPlayed &&
-              (Math.random() < 0.3 || trumpRankRef.current === "2")
+              (Math.random() < 0.2 || trumpRankRef.current === "2")
             ) {
               console.log(`[${myName}] Bidding card: ${newCard.code}`);
               socket.emit("bid_cards", {
@@ -274,7 +274,7 @@ export default function BotPlayer({ socket, roomName, botName }) {
       }
     }
     // Otherwise, play a trump card with the smallest rank
-    const fishTrumpProb = 0.6;
+    const fishTrumpProb = 0.4;
     if (Math.random() < fishTrumpProb) {
       const trumpCards = hand.filter((c) => c.suit === "trump");
       if (trumpCards.length > 0) {
@@ -284,8 +284,8 @@ export default function BotPlayer({ socket, roomName, botName }) {
         return;
       }
     }
-    // Play any trump pair with 20% probability
-    if (Math.random() < 0.2) {
+    // Play any trump pair with 30% probability
+    if (Math.random() < 0.3) {
       const trumpPairs = handDecomp.pairs.filter(
         (pair) => pair[0].suit === "trump"
       );

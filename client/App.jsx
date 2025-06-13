@@ -45,6 +45,7 @@ function App() {
           roomCode={roomCode}
           setGameStarted={setGameStarted}
           playerList={playerList}
+          isHost={isHost}
         />
       </div>
     );

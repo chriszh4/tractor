@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Users, Bot, Play, UserPlus } from "lucide-react";
+import ErrorDisplay from "./ErrorDisplay";
 
 const RoomLobby = ({
   socket,
@@ -7,16 +8,28 @@ const RoomLobby = ({
   roomCode,
   setGameStarted,
   playerList,
+  isHost,
 }) => {
   const [teams, setTeams] = useState({
     team1: [],
     team2: [],
   });
   const [playerTeam, setPlayerTeam] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const botDifficulties = ["Medium"];
 
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isHost.current)
+        socket.emit("leave_room", { roomName: roomCode, name: playerName });
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    socket.on("error", (error) => {
+      setErrorMsg(error);
+    });
+
     socket.on("update_team", ({ updatedTeams }) => {
       let newTeams = {
         team1: updatedTeams.team1 || [],
@@ -127,7 +140,7 @@ const RoomLobby = ({
       team.every((member) => member.type === "bot")
     );
     if (allBots) {
-      alert("Cannot start game with only bots!");
+      setErrorMsg("Cannot start game with only bots. Please add players.");
       return;
     }
     socket.emit("request_start_game", {
@@ -369,6 +382,7 @@ const RoomLobby = ({
           ...(isTeam1 ? styles.team1Card : styles.team2Card),
         }}
       >
+        <ErrorDisplay message={errorMsg} onClose={() => setErrorMsg(null)} />
         <div style={styles.teamHeader}>
           <h3 style={styles.teamName}>{teamName}</h3>
           <div style={styles.teamCount}>
