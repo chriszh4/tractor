@@ -17,7 +17,7 @@ const RoomLobby = ({
   const [playerTeam, setPlayerTeam] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const botDifficulties = ["Medium"];
+  const botDifficulties = ["Easy", "Medium"];
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -40,7 +40,11 @@ const RoomLobby = ({
         newTeams[playerTeam] = newTeams[playerTeam].filter(
           (member) => member.name !== playerName
         );
-        newTeams[playerTeam].push({ name: playerName, type: "player" });
+        newTeams[playerTeam].push({
+          name: playerName,
+          type: "player",
+          difficulty: null,
+        });
       }
       setTeams(newTeams);
       console.log("Updated teams:", newTeams);
@@ -52,6 +56,7 @@ const RoomLobby = ({
       playerList.current = [...teams.team1, ...teams.team2].map((member) => ({
         name: member.name,
         type: member.type,
+        difficulty: member.difficulty,
       }));
       setGameStarted(true);
     });
@@ -65,12 +70,14 @@ const RoomLobby = ({
 
     const newTeams = {
       ...teams,
-      [teamId]: [...team, { name: playerName, type: "player" }],
+      [teamId]: [
+        ...team,
+        { name: playerName, type: "player", difficulty: null },
+      ],
     };
     socket.emit("update_team", { roomCode, updatedTeams: newTeams });
     setTeams((prev) => ({
-      ...prev,
-      [teamId]: [...prev[teamId], { name: playerName, type: "player" }],
+      ...newTeams,
     }));
     setPlayerTeam(teamId);
   };
@@ -101,7 +108,10 @@ const RoomLobby = ({
     const botName = `Bot ${randomString} (${difficulty})`;
     const newTeams = {
       ...teams,
-      [teamId]: [...team, { name: botName, type: "bot", difficulty }],
+      [teamId]: [
+        ...team,
+        { name: botName, type: "bot", difficulty: difficulty },
+      ],
     };
     socket.emit("update_team", { roomCode, updatedTeams: newTeams });
     setTeams((prev) => ({

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import { decomposeHand } from "./cardUtils";
 
-export default function BotPlayer({ socket, roomName, botName }) {
+export default function EasyBotPlayer({ socket, roomName, botName }) {
   const [myName] = useState(botName);
   const [joined, setJoined] = useState(false);
   const dealtCardsRef = useRef(false);
@@ -13,7 +13,9 @@ export default function BotPlayer({ socket, roomName, botName }) {
   const myRoomName = useRef(null);
 
   useEffect(() => {
-    console.log(`[${myName}] BotPlayer component mounted with id ${socket.id}`);
+    console.log(
+      `[${myName}] Easy BotPlayer component mounted with id ${socket.id}`
+    );
     //const socket = io(
     //  import.meta.env.VITE_SOCKET_URL || "http://localhost:3001"
     //);
@@ -89,7 +91,8 @@ export default function BotPlayer({ socket, roomName, botName }) {
             if (
               newCard.code.startsWith(trumpRankRef.current) &&
               !anyPlayerHasPlayed &&
-              (Math.random() < 0.2 || trumpRankRef.current === "2")
+              (Math.random() < 0.2 || trumpRankRef.current === "2") &&
+              false // disable bidding for easy bots
             ) {
               console.log(`[${myName}] Bidding card: ${newCard.code}`);
               socket.emit("bid_cards", {
@@ -112,12 +115,6 @@ export default function BotPlayer({ socket, roomName, botName }) {
       const names = data.playerNames || [];
       const trickWinner = data.trickWinner || "";
 
-      checkOutOfSuits(
-        data.playZones,
-        myName,
-        data.playerNames,
-        data.trickStarter
-      );
       if (data.turn === myName) {
         setTimeout(() => {
           playSmartly(handNow, zones, names, myName, trickWinner, socket);
@@ -126,7 +123,7 @@ export default function BotPlayer({ socket, roomName, botName }) {
     });
 
     return () => {
-      console.log(`[${myName}] BotPlayer component unmounted`);
+      console.log(`[${myName}] Easy BotPlayer component unmounted`);
       // Clean up the socket connection when the component unmounts
       socket.off("start_game");
       socket.off("dealt_cards");
@@ -149,38 +146,6 @@ export default function BotPlayer({ socket, roomName, botName }) {
       playerName: myName,
       selectedCards,
     });
-  }
-
-  function checkOutOfSuits(playZones, myName, playerNames, trickStarter) {
-    // If playzones empty, return
-    const allEmpty = Object.values(playZones).every(
-      (cards) => cards.length === 0
-    );
-    if (allEmpty) {
-      return;
-    }
-
-    // Identify the lead player
-    let leadIndex = playerNames.indexOf(trickStarter);
-    const leadPlayer = playerNames[leadIndex]; // trickStarter
-    const leadCards = playZones[leadPlayer] || [];
-    const leadSuit = leadCards[0]?.suit;
-    // Now iterate through all hands played
-    for (const player of playerNames) {
-      if (playZones[player].length === 0) continue;
-      const hand = playZones[player];
-      // Check if not all cards played by player are in lead suit
-      const cardsNotInLeadSuit = hand.filter((c) => c.suit !== leadSuit);
-      if (cardsNotInLeadSuit.length !== 0) {
-        // Player is out of LeadSuit
-        if (!outOfSuitsRef.current[player].includes(leadSuit)) {
-          console.log(
-            `[${myName}] Player ${player} is out of suit: ${leadSuit}`
-          );
-          outOfSuitsRef.current[player].push(leadSuit);
-        }
-      }
-    }
   }
 
   function playLead(hand, myName, playerNames, socket) {
@@ -238,92 +203,13 @@ export default function BotPlayer({ socket, roomName, botName }) {
       playCardsToServer(myName, selected, socket);
       return;
     }
-    // If teammate is out of something that opposing isn't out (excluding trump)
-    console.log(
-      `[${myName}] Teammate out of suits: ${teammateOutOfSuits.join(", ")}`
-    );
-    const teammateOutOfSuitsNotInOpposing = teammateOutOfSuits.filter(
-      (suit) => !opposingOutOfSuits.includes(suit) && suit !== "trump"
-    );
-    console.log(
-      `[${myName}] Teammate out of suits not in opposing: ${teammateOutOfSuitsNotInOpposing.join(
-        ", "
-      )}`
-    );
-    if (teammateOutOfSuitsNotInOpposing.length > 0) {
-      for (const suit of teammateOutOfSuitsNotInOpposing) {
-        const cardsInSuit = hand
-          .filter((c) => c.suit === suit)
-          .sort(
-            // sort by points first, then rank (all largest to smallest)
-            (a, b) => {
-              const pointsA = a.points;
-              const pointsB = b.points;
-              if (pointsA !== pointsB) return pointsB - pointsA;
-              return b.rank - a.rank;
-            }
-          );
-        if (cardsInSuit.length > 0) {
-          const selected = cardsInSuit[0];
-          console.log(
-            `[${myName}] Playing lead with card in teammate's out suit: ${suit}`
-          );
-          playCardsToServer(myName, [selected], socket);
-          return;
-        }
-      }
-    }
-    // Otherwise, play a trump card with the smallest rank
-    const fishTrumpProb = 0.4;
-    if (Math.random() < fishTrumpProb) {
-      const trumpCards = hand.filter((c) => c.suit === "trump");
-      if (trumpCards.length > 0) {
-        const selected = trumpCards.sort((a, b) => a.rank - b.rank)[0];
-        console.log(`[${myName}] Playing lead with trump card`);
-        playCardsToServer(myName, [selected], socket);
-        return;
-      }
-    }
-    // Play any trump pair with 30% probability
-    if (Math.random() < 0.3) {
-      const trumpPairs = handDecomp.pairs.filter(
-        (pair) => pair[0].suit === "trump"
-      );
-      if (trumpPairs.length > 0) {
-        const selected = trumpPairs[0];
-        console.log(`[${myName}] Playing lead with trump pair`);
-        playCardsToServer(myName, selected, socket);
-        return;
-      }
-    }
-    // Now play largest remaining pair in offsuit, sorting by rankAsStrength
-    const playPairProb = 0.8;
-    if (Math.random() < playPairProb) {
-      const offsuitPairs = handDecomp.pairs
-        .filter((pair) => pair[0].suit !== "trump")
-        .sort((a, b) => {
-          return rankAsStrength(b[0]) - rankAsStrength(a[0]);
-        });
-      if (offsuitPairs.length > 0) {
-        const selected = offsuitPairs[0];
-        console.log(`[${myName}] Playing lead with offsuit pair`);
-        playCardsToServer(myName, selected, socket);
-        return;
-      }
-    }
 
-    // If no valid lead found, play the first card in hand that opponent is not out of
-    console.log(`[${myName}] Playing lead with first card`);
-    for (const card of hand) {
-      if (opposingOutOfSuits.indexOf(card.suit) === -1) {
-        playCardsToServer(myName, [card], socket);
-        return;
-      }
-    }
-    // Play first card in hand
+    // Play a random card from hand
     if (hand.length > 0) {
+      const randomIndex = Math.floor(Math.random() * hand.length);
+      const selected = hand[randomIndex];
       console.log(`[${myName}] Playing lead with first card in hand`);
-      playCardsToServer(myName, [hand[0]], socket);
+      playCardsToServer(myName, [selected], socket);
       return;
     }
     console.warn(`[${myName}] No valid lead found, playing nothing`);
@@ -341,6 +227,13 @@ export default function BotPlayer({ socket, roomName, botName }) {
     playersPlayedSoFar,
     playZones
   ) {
+    // 50% chance to play small
+    if (Math.random() < 0.5) {
+      console.log(`[${myName}] Playing small because bad`);
+      playSmall(hand, myName, leadPlayer, leadCards, socket);
+      return;
+    }
+
     // check if teammate is winning
     const myIndex = playerNames.indexOf(myName);
     const leadIndex = playerNames.indexOf(leadPlayer);

@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useRef, use } from "react";
 import io from "socket.io-client";
 import GameBoard from "./components/GameBoard";
-import BotPlayer from "./components/BotPlayer";
+import EasyBotPlayer from "./components/EasyBotPlayer";
+import MediumBotPlayer from "./components/MediumBotPlayer";
 import GameLobby from "./components/GameLobby";
 import RoomLobby from "./components/RoomLobby";
 
@@ -56,9 +57,25 @@ function App() {
       <GameBoard socket={socket} playerName={playerName} roomName={roomCode} />
       {isHost.current &&
         playerList.current
-          .filter((player) => player.type === "bot")
+          .filter(
+            (player) => player.type === "bot" && player.difficulty === "Medium"
+          )
           .map((botPlayer, index) => (
-            <BotPlayer
+            <MediumBotPlayer
+              key={index} // "could" Prefer unique bot name, fallback to index
+              socket={botSocketsRef.current[index]}
+              roomName={roomCode}
+              botName={botPlayer.name}
+            />
+          ))}
+
+      {isHost.current &&
+        playerList.current
+          .filter(
+            (player) => player.type === "bot" && player.difficulty === "Easy"
+          )
+          .map((botPlayer, index) => (
+            <EasyBotPlayer
               key={index} // "could" Prefer unique bot name, fallback to index
               socket={botSocketsRef.current[index]}
               roomName={roomCode}
